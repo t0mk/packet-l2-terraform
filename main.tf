@@ -8,7 +8,7 @@ resource "packet_project" "test" {
     name = "testpro"
     bgp_config {
         deployment_type = "local"
-        md5 = "${var.bgp_password)"
+        md5 = "${var.bgp_password}"
         asn = 65000
     }
 }
@@ -33,9 +33,9 @@ resource "packet_device" "test" {
 data "template_file" "bird_conf_template" {
     template = <<EOF
 filter packetdns {
-    if net = ${floating_ip}/32 then accept;
+    if net = $${floating_ip}/32 then accept;
 }
-router id ${private_ipv4};
+router id $${private_ipv4};
 protocol direct {
     interface "lo";
 }
@@ -50,14 +50,14 @@ protocol device {
 protocol bgp {
     export filter packetdns;
     local as 65000;
-    neighbor ${gateway_ip} as 65530;
-    password "${bgp_password}"; 
+    neighbor $${gateway_ip} as 65530;
+    password "$${bgp_password}"; 
 }
 EOF
     vars = {
         floating_ip  = "${packet_reserved_ip_block.addr.address}"
-        private_ipv4 = "${packet_device.test.private_ipv4}
-        gateway_ip   = "${ffdf}"
+        private_ipv4 = "${packet_device.test.network.0.address}"
+        gateway_ip   = "${packet_device.test.network.0.gateway}"
         bgp_password = "${var.bgp_password}"
     }
 }
