@@ -28,6 +28,11 @@ resource "packet_device" "test" {
     project_id       = "${packet_project.test.id}"
 }
 
+resource "packet_bgp_session" "test" {
+	device_id = "${packet_device.test.id}"
+	address_family = "ipv4"
+}
+
 
 
 data "template_file" "bird_conf_template" {
@@ -71,9 +76,6 @@ resource "null_resource" "configure_bird" {
         agent = false
     }
 
-    triggers = {
-        template = "${data.template_file.bird_conf_template.rendered}"
-    }
     provisioner "remote-exec" {
         inline = [
             "apt-get install bird",
@@ -81,7 +83,9 @@ resource "null_resource" "configure_bird" {
             "mv /etc/bird/bird.conf /etc/bird/bird.conf.original",
         ]
     }
-
+    triggers = {
+        template = "${data.template_file.bird_conf_template.rendered}"
+    }
 
     provisioner "file" {
         content     = "${data.template_file.bird_conf_template.rendered}"
