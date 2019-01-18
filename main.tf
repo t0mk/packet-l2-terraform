@@ -34,36 +34,54 @@ resource "packet_bgp_session" "test" {
 }
 
 
+data "template_file" "interface_lo0" {
+
+    template = <<EOF
+auto lo:0
+iface lo:0 inet static
+   address $${floating_ip}
+   netmask $${floating_netmask}
+EOF
+
+    vars = {
+        floating_ip       = "${packet_reserved_ip_block.addr.address}"
+        floating_netmask  = "${packet_reserved_ip_block.addr.netmask}"
+    }
+}
 
 data "template_file" "bird_conf_template" {
+
     template = <<EOF
-filter packetdns {
-    if net = $${floating_ip}/32 then accept;
+filter packet_bgp {
+    if net = $${floating_ip}/$${floating_cidr} then accept;
 }
 router id $${private_ipv4};
 protocol direct {
     interface "lo";
 }
 protocol kernel {
-    scan time 20;
-    learn;
+    scan time 10;
     persist;
+    import all;
+    export all;
 }
 protocol device {
     scan time 10;
 }
 protocol bgp {
-    export filter packetdns;
+    export filter packet_bgp;
     local as 65000;
     neighbor $${gateway_ip} as 65530;
     password "$${bgp_password}"; 
 }
 EOF
+
     vars = {
-        floating_ip  = "${packet_reserved_ip_block.addr.address}"
-        private_ipv4 = "${packet_device.test.network.0.address}"
-        gateway_ip   = "${packet_device.test.network.0.gateway}"
-        bgp_password = "${var.bgp_password}"
+        floating_ip    = "${packet_reserved_ip_block.addr.address}"
+        floating_cidr  = "${packet_reserved_ip_block.addr.cidr}"
+        private_ipv4   = "${packet_device.test.network.0.address}"
+        gateway_ip     = "${packet_device.test.network.0.gateway}"
+        bgp_password   = "${var.bgp_password}"
     }
 }
 
@@ -76,19 +94,31 @@ resource "null_resource" "configure_bird" {
         agent = false
     }
 
-    provisioner "remote-exec" {
-        inline = [
-            "apt-get install bird",
-            "sysctl net.ipv4.ip_forward=1",
-            "mv /etc/bird/bird.conf /etc/bird/bird.conf.original",
-        ]
-    }
     triggers = {
         template = "${data.template_file.bird_conf_template.rendered}"
+        template = "${data.template_file.interface_lo0.rendered}"
     }
 
     provisioner "file" {
         content     = "${data.template_file.bird_conf_template.rendered}"
         destination = "/etc/bird/bird.conf"
     }
+
+    provisioner "file" {
+        content     = "${data.template_file.interface_lo0.rendered}"
+        destination = "/etc/network/interfaces.d/lo0"
+    }
+
+    provisioner "remote-exec" {
+        inline = [
+            "apt-get install bird",
+            "sysctl net.ipv4.ip_forward=1",
+            "grep /etc/network/interfaces.d /etc/network/interfaces || echo 'source /etc/network/interfaces.d/*' >> /etc/network/interfaces",
+            "ifup lo:0",
+            "service bird restart",
+        ]
+    }
+
 }
+
+
