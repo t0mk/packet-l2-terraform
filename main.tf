@@ -94,6 +94,13 @@ resource "null_resource" "configure_bird" {
         agent = false
     }
 
+    provisioner "remote-exec" {
+        inline = [
+            "apt-get install bird",
+            "mv /etc/bird/bird.conf /etc/bird/bird.conf.old",
+        ]
+    }
+
     triggers = {
         template = "${data.template_file.bird_conf_template.rendered}"
         template = "${data.template_file.interface_lo0.rendered}"
@@ -111,7 +118,6 @@ resource "null_resource" "configure_bird" {
 
     provisioner "remote-exec" {
         inline = [
-            "apt-get install bird",
             "sysctl net.ipv4.ip_forward=1",
             "grep /etc/network/interfaces.d /etc/network/interfaces || echo 'source /etc/network/interfaces.d/*' >> /etc/network/interfaces",
             "ifup lo:0",
