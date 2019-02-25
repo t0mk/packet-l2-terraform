@@ -2,6 +2,6 @@
 
 Contains templates for configurations from
 
-(https://support.packet.com/kb/articles/layer-2-configurations)[https://support.packet.com/kb/articles/layer-2-configurations]
+[https://support.packet.com/kb/articles/layer-2-configurations](https://support.packet.com/kb/articles/layer-2-configurations)
 
 
