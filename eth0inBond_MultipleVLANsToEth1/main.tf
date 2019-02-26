@@ -27,14 +27,14 @@ resource "packet_vlan" "test2" {
   project_id  = "${packet_project.test.id}"
 }
 
-resource "packet_vlan_attachment" "test1" {
+resource "packet_port_vlan_attachment" "test1" {
   device_id = "${packet_device.test.id}"
   # 2nd port is eth1
   port_id = "${packet_device.test.ports.2.id}"
   vlan_id = "${packet_vlan.test1.id}"
 }
 
-resource "packet_vlan_attachment" "test2" {
+resource "packet_port_vlan_attachment" "test2" {
   device_id = "${packet_device.test.id}"
   # 2nd port is eth1
   port_id = "${packet_device.test.ports.2.id}"
