@@ -23,8 +23,7 @@ resource "packet_vlan" "test" {
 
 resource "packet_vlan_attachment" "test" {
   device_id = "${packet_device.test.id}"
-  # 2nd port is eth1
-  port_id = "${packet_device.test.ports.2.id}"
+  port_name = "eth1"
   vlan_id = "${packet_vlan.test.id}"
 }
 
